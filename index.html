@@ -1,50 +1,373 @@
-<!-- ... existing code ... -->
-            
-            // --- LÓGICA DE ARREDONDAMENTO PELO MÉTODO DAS MAIORES SOBRAS ---
-            const exatoPresencial = (pctPresencial / 100) * total;
-            const exatoParcial = (pctParcial / 100) * total;
-            const exatoIntegral = (pctIntegral / 100) * total;
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Calculadora PGD - Percentuais Aprimorada</title>
+    <!-- Inclusão do Tailwind CSS para um design moderno -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Usando a fonte Inter para uma melhor legibilidade */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Estilo para garantir que os inputs numéricos mostrem os placeholders */
+        input::placeholder {
+            color: #9ca3af;
+        }
+        /* Esconde a barra de rolagem do chat, mas mantém a funcionalidade */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800">
 
-            let qtdPresencial = Math.floor(exatoPresencial);
-            let qtdParcial = Math.floor(exatoParcial);
-            let qtdIntegral = Math.floor(exatoIntegral);
+    <div class="container mx-auto p-4 md:p-8 max-w-4xl">
+        
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-slate-900">Calculadora PGD - Percentuais</h1>
+            <p class="text-slate-600 mt-2">Ferramenta para auxiliar no cálculo de distribuição de servidores em modalidades de trabalho.</p>
+        </header>
 
-            let sobras = total - (qtdPresencial + qtdParcial + qtdIntegral);
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- Coluna de Entrada de Dados -->
+            <div class="bg-white p-6 rounded-xl shadow-md">
+                <h2 class="text-2xl font-bold mb-6 text-center text-slate-900">Parâmetros</h2>
 
-            const fracoes = [
-                { modalidade: 'presencial', valor: exatoPresencial % 1 },
-                { modalidade: 'parcial', valor: exatoParcial % 1 },
-                { modalidade: 'integral', valor: exatoIntegral % 1 }
-            ];
+                <!-- Campo Total de Servidores -->
+                <div class="mb-4">
+                    <label for="total" class="block text-sm font-semibold text-slate-700 mb-1">Total de Servidores na Unidade</label>
+                    <input type="number" id="total" placeholder="Ex: 50" class="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                    <p class="text-xs text-slate-500 mt-1">Informe o total de servidores da unidade, incluindo os que se enquadram nas exceções legais.</p>
+                </div>
 
-            // Ordena pelas maiores frações. Em caso de empate, prioriza presencial > parcial > integral
-            const prioridade = { presencial: 3, parcial: 2, integral: 1 };
-            fracoes.sort((a, b) => {
-                if (b.valor > a.valor) return 1;
-                if (a.valor > b.valor) return -1;
-                return prioridade[b.modalidade] - prioridade[a.modalidade];
-            });
-            
-            // Distribui as vagas restantes
-            for (let i = 0; i < sobras; i++) {
-                if (fracoes[i].modalidade === 'presencial') {
-                    qtdPresencial++;
-                } else if (fracoes[i].modalidade === 'parcial') {
-                    qtdParcial++;
-                } else {
-                    qtdIntegral++;
-                }
+                <hr class="my-6">
+
+                <!-- Campos de Percentuais -->
+                <div class="mb-4">
+                    <label for="integral" class="block text-sm font-semibold text-slate-700 mb-1">% Teletrabalho Integral (Máx: 35%)</label>
+                    <input type="number" id="integral" placeholder="Ex: 35" class="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                </div>
+                <div class="mb-4">
+                    <label for="parcial" class="block text-sm font-semibold text-slate-700 mb-1">% Teletrabalho Parcial</label>
+                    <input type="number" id="parcial" placeholder="Ex: 35" class="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                </div>
+                <div class="mb-4">
+                    <label for="presencial" class="block text-sm font-semibold text-slate-700 mb-1">% Trabalho Presencial (Mín: 10%)</label>
+                    <input type="number" id="presencial" placeholder="Ex: 30" class="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                </div>
+
+                <!-- Botões de Ação -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-6">
+                    <button class="col-span-1 sm:col-span-3 w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-md hover:bg-blue-700 transition-all shadow" onclick="calcular()">
+                        Calcular
+                    </button>
+                    <button class="bg-slate-200 text-slate-700 font-semibold py-2 px-4 rounded-md hover:bg-slate-300 transition-all" onclick="limparCampos()">Limpar</button>
+                    <button class="col-span-1 sm:col-span-2 bg-green-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-green-700 transition-all" onclick="exportarExcel()">Exportar para Excel</button>
+                </div>
+            </div>
+
+            <!-- Coluna de Resultados -->
+            <div class="bg-white p-6 rounded-xl shadow-md flex flex-col">
+                <h2 class="text-2xl font-bold mb-6 text-center text-slate-900">Resultado</h2>
+                <!-- Mensagem de Status -->
+                <div id="mensagem" class="text-center mb-4 font-medium text-sm p-3 rounded-md" role="alert" aria-live="assertive"></div>
+                <!-- Container do Resultado -->
+                <div id="resultado" class="flex-grow">
+                     <p class="text-center text-slate-500">Os resultados do cálculo aparecerão aqui.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Assinatura -->
+        <footer class="text-center mt-8 text-sm text-slate-500">
+            <p>Desenvolvido por <strong>DPRO/COEPE</strong></p>
+        </footer>
+    </div>
+
+    <!-- Botão Flutuante do Chatbot -->
+    <button id="chat-toggle" class="fixed bottom-6 right-6 bg-blue-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:bg-blue-700 transition-transform hover:scale-110">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.839 8.839 0 01-4.083-.982A.5.5 0 005 16.517V15a7 7 0 114.545-6.571.5.5 0 00-.545.866A6 6 0 1010 14a6 6 0 006-6c0-3.314-2.686-6-6-6S4 6.686 4 10c0 .276.022.546.064.811.04.25.26.437.51.437h.156a.5.5 0 00.48-.359A4.002 4.002 0 0110 8c2.21 0 4 1.79 4 4a4 4 0 01-1.128 2.768.5.5 0 00.743.664A5 5 0 0015 12c0-2.761-2.239-5-5-5S5 9.239 5 12v.517A8.988 8.988 0 012 10C2 6.134 5.582 3 10 3s8 3.134 8 7z" clip-rule="evenodd" />
+            <path fill-rule="evenodd" d="M10 8a2 2 0 100-4 2 2 0 000 4zm0 2a2 2 0 100 4 2 2 0 000-4z" clip-rule="evenodd" />
+        </svg>
+    </button>
+
+    <!-- Janela do Chatbot -->
+    <div id="chat-window" class="fixed bottom-24 right-4 left-4 sm:left-auto sm:w-80 md:w-96 bg-white rounded-xl shadow-2xl transition-all duration-300 transform scale-0 origin-bottom-right flex flex-col" style="max-height: 80vh;">
+        <div class="flex justify-between items-center p-3 bg-slate-800 text-white rounded-t-xl flex-shrink-0">
+            <h3 class="font-bold">Assistente de Dúvidas</h3>
+            <button id="chat-close" class="hover:text-slate-300 text-2xl leading-none">&times;</button>
+        </div>
+        <div class="p-4 overflow-y-auto no-scrollbar">
+            <div id="chat-answer" class="bg-slate-50 p-3 rounded-lg text-sm text-slate-700">
+                <p class="font-semibold">Olá! Como posso ajudar?</p>
+                <p>Selecione uma das perguntas abaixo para ver a resposta.</p>
+            </div>
+            <div id="faq-container" class="mt-3 space-y-2">
+                <!-- Perguntas serão inseridas aqui pelo JS -->
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // --- LÓGICA DA CALCULADORA ---
+        const totalInput = document.getElementById("total");
+        const integralInput = document.getElementById("integral");
+        const parcialInput = document.getElementById("parcial");
+        const presencialInput = document.getElementById("presencial");
+        const mensagemDiv = document.getElementById("mensagem");
+        const resultadoDiv = document.getElementById("resultado");
+
+        function showMessage(text, isError = false) {
+            mensagemDiv.textContent = text;
+            if (text) {
+                mensagemDiv.className = isError 
+                    ? 'text-center mb-4 font-medium text-sm p-3 rounded-md bg-red-100 text-red-800' 
+                    : 'text-center mb-4 font-medium text-sm p-3 rounded-md bg-green-100 text-green-800';
+            } else {
+                mensagemDiv.className = 'text-center mb-4 font-medium text-sm p-3 rounded-md';
             }
+        }
+
+        /**
+         * LÓGICA DE CÁLCULO
+         * Com base de cálculo no TOTAL e arredondamento priorizado.
+         */
+        function calcular() {
+            showMessage("");
+            resultadoDiv.innerHTML = '<p class="text-center text-slate-500">Aguardando novo cálculo...</p>';
+            
+            const inputs = {
+                total: totalInput.value,
+                integral: integralInput.value,
+                parcial: parcialInput.value,
+                presencial: presencialInput.value,
+            };
+
+            if (Object.values(inputs).some(v => v === "")) {
+                showMessage("Todos os campos devem ser preenchidos.", true);
+                return;
+            }
+
+            const total = parseInt(inputs.total, 10);
+            const pctIntegral = parseInt(inputs.integral, 10);
+            const pctParcial = parseInt(inputs.parcial, 10);
+            const pctPresencial = parseInt(inputs.presencial, 10);
+            
+            // Validações de entrada
+            if ([total, pctIntegral, pctParcial, pctPresencial].some(isNaN)) {
+                showMessage("Todos os campos devem conter números inteiros válidos.", true);
+                return;
+            }
+            if (total <= 0) {
+                showMessage("O total de servidores deve ser maior que zero.", true);
+                return;
+            }
+            
+            // Validações de percentuais
+            const somaPercentuais = pctIntegral + pctParcial + pctPresencial;
+            if (somaPercentuais !== 100) {
+                showMessage(`A soma dos percentuais deve ser 100% (atualmente está em ${somaPercentuais}%).`, true);
+                return;
+            }
+            if (pctPresencial < 10) {
+                showMessage("O percentual de Trabalho Presencial deve ser no mínimo 10%.", true);
+                return;
+            }
+            if (pctIntegral < 0 || pctIntegral > 35) {
+                showMessage("O percentual de Teletrabalho Integral deve estar entre 0% e 35%.", true);
+                return;
+            }
+             if (pctParcial < 0) {
+                showMessage("O percentual de Teletrabalho Parcial não pode ser negativo.", true);
+                return;
+            }
+            
+            const maxParcialFromSum = 90 - pctIntegral;
+            const maxParcialFromConversion = 35 + 2 * (35 - pctIntegral);
+            const maxParcialPermitido = Math.min(maxParcialFromSum, maxParcialFromConversion);
+
+            if (pctParcial > maxParcialPermitido) {
+                let reason = (maxParcialPermitido === maxParcialFromSum)
+                    ? `para manter o mínimo de 10% no presencial.`
+                    : `pela regra de conversão.`;
+                showMessage(`Com ${pctIntegral}% de integral, o parcial não pode exceder ${maxParcialPermitido}% ${reason}`, true);
+                return;
+            }
+            
+            // --- LÓGICA DE ARREDONDAMENTO SEQUENCIAL E PRIORIZADO ---
+            const qtdPresencial = Math.ceil((pctPresencial / 100) * total);
+            const restanteAposPresencial = Math.max(0, total - qtdPresencial);
+
+            const qtdParcialDesejado = Math.ceil((pctParcial / 100) * total);
+            const qtdParcial = Math.min(qtdParcialDesejado, restanteAposPresencial);
+
+            const qtdIntegral = restanteAposPresencial - qtdParcial;
             // --- FIM DA LÓGICA ---
 
             showMessage("Cálculo realizado com sucesso.", false);
 
             const observacaoHTML = `
-<!-- ... existing code ... -->
+                <div class="mt-8 bg-slate-50 p-4 rounded-lg border border-slate-200">
+                    <h3 class="font-bold text-slate-800 text-sm">Observação Importante:</h3>
+                    <p class="text-sm text-slate-600 mt-1">
+                        Caso sua unidade possua servidores em exceção (conforme Art. 9º, § 3º), eles não ocuparão os limites máximos das vagas de teletrabalho integral ou parcial.
+                    </p>
+                </div>
+            `;
+
+            resultadoDiv.innerHTML = `
+                <div class="overflow-x-auto">
+                    <table id="tabelaResultado" class="w-full text-sm text-left text-slate-500">
+                        <thead class="text-xs text-slate-700 uppercase bg-slate-100">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 rounded-l-lg">Modalidade</th>
+                                <th scope="col" class="px-6 py-3 text-center rounded-r-lg">Quantidade de Servidores</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="bg-white border-b">
+                                <th scope="row" class="px-6 py-4 font-medium text-slate-900 whitespace-nowrap">Teletrabalho Integral</th>
+                                <td class="px-6 py-4 text-center">${qtdIntegral}</td>
+                            </tr>
+                            <tr class="bg-white border-b">
+                                <th scope="row" class="px-6 py-4 font-medium text-slate-900 whitespace-nowrap">Teletrabalho Parcial</th>
+                                <td class="px-6 py-4 text-center">${qtdParcial}</td>
+                            </tr>
+                            <tr class="bg-white">
+                                <th scope="row" class="px-6 py-4 font-medium text-slate-900 whitespace-nowrap">Trabalho Presencial</th>
+                                <td class="px-6 py-4 text-center">${qtdPresencial}</td>
+                            </tr>
+                        </tbody>
+                        <tfoot class="font-semibold text-slate-900">
+                             <tr class="bg-slate-100">
+                                <th scope="row" class="px-6 py-3 text-base rounded-l-lg">Total Geral na Unidade</th>
+                                <td class="px-6 py-3 text-center text-base">${total}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                    ${observacaoHTML}
+                </div>
+            `;
+        }
+
+        function limparCampos() {
+            totalInput.value = "";
+            integralInput.value = "";
+            parcialInput.value = "";
+            presencialInput.value = "";
+            showMessage("");
+            resultadoDiv.innerHTML = '<p class="text-center text-slate-500">Os resultados do cálculo aparecerão aqui.</p>';
+            totalInput.focus();
+        }
+
+        function exportarExcel() {
+            const tabela = document.getElementById("tabelaResultado");
+            if (!tabela) {
+                showMessage("Realize o cálculo antes de exportar.", true);
+                return;
+            }
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += '"Resultado Calculadora PGD"\n\n';
+            const rows = tabela.querySelectorAll("tr");
+            rows.forEach(row => {
+                let rowData = [];
+                const cols = row.querySelectorAll("th, td");
+                cols.forEach(col => {
+                    let cellText = `"${col.innerText.trim().replace(/"/g, '""')}"`;
+                    rowData.push(cellText);
+                });
+                csvContent += rowData.join(",") + "\r\n";
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "resultado_pgd.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // --- LÓGICA DO CHATBOT (FAQ) ---
+        const chatToggleButton = document.getElementById('chat-toggle');
+        const chatWindow = document.getElementById('chat-window');
+        const chatCloseButton = document.getElementById('chat-close');
+        const faqContainer = document.getElementById('faq-container');
+        const chatAnswerDiv = document.getElementById('chat-answer');
+
+        const faqs = [
+            {
+                question: "O que são servidores em exceção?",
+                answer: "São servidores em situações especiais (conforme Art. 9º, § 3º) que têm direito ao teletrabalho. Eles não contam para os limites de vagas de teletrabalho, funcionando como um 'bônus' para a unidade."
+            },
+            {
+                question: "Existe um percentual mínimo para trabalho presencial?",
+                answer: "Sim. A modalidade presencial nunca poderá ser inferior a 10% do total de servidores da unidade. Este é um limite mínimo obrigatório."
+            },
+            {
+                question: "Como as exceções afetam o cálculo?",
+                answer: "Os percentuais são sempre calculados sobre o 'Total de Servidores'. Servidores em exceção não consomem as vagas de teletrabalho calculadas, permitindo que o gestor aloque mais pessoas nessa modalidade além dos limites."
+            },
+            {
+                question: "Como funciona a conversão entre teletrabalho integral e parcial?",
+                answer: "O gestor pode reduzir o % de teletrabalho integral para aumentar o de parcial. Cada 1% reduzido do integral permite aumentar 2% no parcial, desde que o presencial não fique abaixo de 10%."
+            },
+            {
                 question: "Como é feito o arredondamento dos cálculos?",
-                answer: "A calculadora usa o 'Método das Maiores Sobras'. Primeiro, ela aloca as vagas inteiras. Depois, distribui as vagas restantes para as modalidades com as maiores frações decimais, seguindo a prioridade: 1º Presencial, 2º Parcial e 3º Integral."
+                answer: "O cálculo é feito de forma sequencial e priorizada: 1º) calcula-se o Presencial e arredonda-se para cima; 2º) com o restante, calcula-se o Parcial e arredonda-se para cima; 3º) o que sobrar é alocado no Integral."
             },
             {
                 question: "Servidores em exceção podem ocupar vagas presenciais?",
-<!-- ... existing code ... -->
-```
+                answer: "A norma estabelece que a cota mínima de 10% de trabalho presencial deve ser garantida. Servidores em exceção têm direito ao teletrabalho. A alocação final de quem cumprirá a cota presencial é uma decisão do gestor."
+            },
+            {
+                question: "O que fazer se houver mais exceções que vagas presenciais?",
+                answer: "As exceções não interagem diretamente com as vagas presenciais. Servidores em exceção, conforme a norma, são alocados em teletrabalho sem consumir os limites de vagas calculados."
+            },
+            {
+                question: "A calculadora considera exceções na base de cálculo?",
+                answer: "Sim. A base de cálculo (denominador) para os percentuais é o 'Total de Servidores na Unidade'. As exceções são desconsideradas apenas no cômputo dos limites de vagas para teletrabalho (numerador)."
+            }
+        ];
+
+        // Popula as perguntas no chat
+        faqs.forEach((faq, index) => {
+            const button = document.createElement('button');
+            button.className = 'w-full text-left p-2 text-sm bg-slate-100 rounded-md hover:bg-blue-100 transition';
+            button.textContent = faq.question;
+            button.dataset.index = index;
+            faqContainer.appendChild(button);
+        });
+
+        // Adiciona evento para mostrar resposta
+        faqContainer.addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON') {
+                const index = e.target.dataset.index;
+                // Adicionando 'break-words' para garantir a quebra de linha em palavras longas
+                chatAnswerDiv.innerHTML = `<p class="font-semibold text-slate-800 break-words">${faqs[index].question}</p><p class="mt-1 break-words">${faqs[index].answer}</p>`;
+            }
+        });
+
+        // Abre e fecha o chat
+        chatToggleButton.addEventListener('click', () => {
+            chatWindow.classList.toggle('scale-0');
+        });
+
+        chatCloseButton.addEventListener('click', () => {
+            chatWindow.classList.add('scale-0');
+        });
+
+    </script>
+</body>
+</html>
