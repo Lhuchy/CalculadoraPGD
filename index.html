@@ -147,15 +147,72 @@
             showMessage("");
             resultadoDiv.innerHTML = '<p class="text-center text-slate-500">Aguardando novo cálculo...</p>';
             
-            // --- LÓGICA DE ARREDONDAMENTO SEQUENCIAL PRIORIZADO ---
-            let qtdPresencial = Math.ceil((pctPresencial / 100) * total);
+            const inputs = {
+                total: totalInput.value,
+                integral: integralInput.value,
+                parcial: parcialInput.value,
+                presencial: presencialInput.value,
+            };
+
+            if (Object.values(inputs).some(v => v === "")) {
+                showMessage("Todos os campos devem ser preenchidos.", true);
+                return;
+            }
+
+            const total = parseInt(inputs.total, 10);
+            const pctIntegral = parseInt(inputs.integral, 10);
+            const pctParcial = parseInt(inputs.parcial, 10);
+            const pctPresencial = parseInt(inputs.presencial, 10);
             
-            let servidoresRestantes = total - qtdPresencial;
+            // Validações de entrada
+            if ([total, pctIntegral, pctParcial, pctPresencial].some(isNaN)) {
+                showMessage("Todos os campos devem conter números inteiros válidos.", true);
+                return;
+            }
+            if (total <= 0) {
+                showMessage("O total de servidores deve ser maior que zero.", true);
+                return;
+            }
             
-            let qtdParcial = Math.ceil((pctParcial / 100) * total);
-            qtdParcial = Math.min(qtdParcial, servidoresRestantes);
+            // Validações de percentuais
+            const somaPercentuais = pctIntegral + pctParcial + pctPresencial;
+            if (somaPercentuais !== 100) {
+                showMessage(`A soma dos percentuais deve ser 100% (atualmente está em ${somaPercentuais}%).`, true);
+                return;
+            }
+            if (pctPresencial < 10) {
+                showMessage("O percentual de Trabalho Presencial deve ser no mínimo 10%.", true);
+                return;
+            }
+            if (pctIntegral < 0 || pctIntegral > 35) {
+                showMessage("O percentual de Teletrabalho Integral deve estar entre 0% e 35%.", true);
+                return;
+            }
+             if (pctParcial < 0) {
+                showMessage("O percentual de Teletrabalho Parcial não pode ser negativo.", true);
+                return;
+            }
             
-            let qtdIntegral = total - qtdPresencial - qtdParcial;
+            const maxParcialFromSum = 90 - pctIntegral;
+            const maxParcialFromConversion = 35 + 2 * (35 - pctIntegral);
+            const maxParcialPermitido = Math.min(maxParcialFromSum, maxParcialFromConversion);
+
+            if (pctParcial > maxParcialPermitido) {
+                let reason = (maxParcialPermitido === maxParcialFromSum)
+                    ? `para manter o mínimo de 10% no presencial.`
+                    : `pela regra de conversão.`;
+                showMessage(`Com ${pctIntegral}% de integral, o parcial não pode exceder ${maxParcialPermitido}% ${reason}`, true);
+                return;
+            }
+            
+            // --- LÓGICA DE ARREDONDAMENTO SEQUENCIAL E PRIORIZADO ---
+            const qtdPresencial = Math.ceil((pctPresencial / 100) * total);
+            const restanteAposPresencial = Math.max(0, total - qtdPresencial);
+
+            const qtdParcialDesejado = Math.ceil((pctParcial / 100) * total);
+            const qtdParcial = Math.min(qtdParcialDesejado, restanteAposPresencial);
+
+            const qtdIntegral = restanteAposPresencial - qtdParcial;
             // --- FIM DA LÓGICA ---
 
             showMessage("Cálculo realizado com sucesso.", false);
@@ -268,7 +325,7 @@
             },
             {
                 question: "Como é feito o arredondamento dos cálculos?",
-                answer: "O cálculo é feito de forma sequencial e priorizada. Primeiro, calcula-se e arredonda-se para cima as vagas do Presencial. Depois, com os servidores restantes, calcula-se e arredonda-se para cima as vagas do Parcial. O que sobra é alocado para o Integral."
+                answer: "O cálculo é feito de forma sequencial e priorizada: 1º) calcula-se o Presencial e arredonda-se para cima; 2º) com o restante, calcula-se o Parcial e arredonda-se para cima; 3º) o que sobrar é alocado no Integral."
             },
             {
                 question: "Servidores em exceção podem ocupar vagas presenciais?",
@@ -314,5 +371,3 @@
     </script>
 </body>
 </html>
-
-
