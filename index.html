@@ -205,14 +205,41 @@
                 return;
             }
             
-            // --- LÓGICA DE ARREDONDAMENTO SEQUENCIAL E PRIORIZADO ---
-            const qtdPresencial = Math.ceil((pctPresencial / 100) * total);
-            const restanteAposPresencial = Math.max(0, total - qtdPresencial);
+            // --- LÓGICA DE ARREDONDAMENTO PELO MÉTODO DAS MAIORES SOBRAS ---
+            const exatoPresencial = (pctPresencial / 100) * total;
+            const exatoParcial = (pctParcial / 100) * total;
+            const exatoIntegral = (pctIntegral / 100) * total;
 
-            const qtdParcialDesejado = Math.ceil((pctParcial / 100) * total);
-            const qtdParcial = Math.min(qtdParcialDesejado, restanteAposPresencial);
+            let qtdPresencial = Math.floor(exatoPresencial);
+            let qtdParcial = Math.floor(exatoParcial);
+            let qtdIntegral = Math.floor(exatoIntegral);
 
-            const qtdIntegral = restanteAposPresencial - qtdParcial;
+            let sobras = total - (qtdPresencial + qtdParcial + qtdIntegral);
+
+            const fracoes = [
+                { modalidade: 'presencial', valor: exatoPresencial % 1 },
+                { modalidade: 'parcial', valor: exatoParcial % 1 },
+                { modalidade: 'integral', valor: exatoIntegral % 1 }
+            ];
+
+            // Ordena pelas maiores frações. Em caso de empate, prioriza presencial > parcial > integral
+            const prioridade = { presencial: 3, parcial: 2, integral: 1 };
+            fracoes.sort((a, b) => {
+                if (b.valor > a.valor) return 1;
+                if (a.valor > b.valor) return -1;
+                return prioridade[b.modalidade] - prioridade[a.modalidade];
+            });
+            
+            // Distribui as vagas restantes
+            for (let i = 0; i < sobras; i++) {
+                if (fracoes[i].modalidade === 'presencial') {
+                    qtdPresencial++;
+                } else if (fracoes[i].modalidade === 'parcial') {
+                    qtdParcial++;
+                } else {
+                    qtdIntegral++;
+                }
+            }
             // --- FIM DA LÓGICA ---
 
             showMessage("Cálculo realizado com sucesso.", false);
@@ -325,7 +352,7 @@
             },
             {
                 question: "Como é feito o arredondamento dos cálculos?",
-                answer: "O cálculo é feito de forma sequencial e priorizada: 1º) calcula-se o Presencial e arredonda-se para cima; 2º) com o restante, calcula-se o Parcial e arredonda-se para cima; 3º) o que sobrar é alocado no Integral."
+                answer: "A calculadora usa o 'Método das Maiores Sobras'. Primeiro, ela aloca as vagas inteiras. Depois, distribui as vagas restantes para as modalidades com as maiores frações decimais, seguindo a prioridade: 1º Presencial, 2º Parcial e 3º Integral."
             },
             {
                 question: "Servidores em exceção podem ocupar vagas presenciais?",
@@ -371,3 +398,4 @@
     </script>
 </body>
 </html>
+
